@@ -27,9 +27,15 @@
     },
     "plugins": [
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "The app needs access to your location to show your favorite places on the map."
+        }
+      ],
+      [
         "expo-image-picker",
         {
-          "cameraPermission": "The app needs access to your camera in orderto take photos of your favorite places.",
+          "cameraPermission": "The app needs access to your camera in order to take photos of your favorite places.",
           "colors": {
             "cropToolbarColor": "#000000"
           },

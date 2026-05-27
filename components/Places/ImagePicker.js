@@ -6,13 +6,13 @@ import {
 import { useState } from "react";
 import {
   Alert,
-  Button,
   Image,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { Colors } from "../../constants/colors";
+import OutlineButton from "../UI/OutlineButton";
 
 function ImagePicker() {
   const [pickedImage, setPickedImage] = useState(null);
@@ -68,7 +68,7 @@ function ImagePicker() {
       <View style={styles.imagePreview}>
         {imagePreview}
       </View>
-      <Button title="Take Image" onPress={takeImageHandler} />
+      <OutlineButton icon="camera" onPress={takeImageHandler}>Take Image</OutlineButton>
     </View>
   );
 }

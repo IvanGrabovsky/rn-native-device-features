@@ -3,15 +3,59 @@ import {
   PermissionStatus,
   useForegroundPermissions,
 } from "expo-location";
-import { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, StyleSheet, Text, View, Image } from "react-native";
 import { Colors } from "../../constants/colors";
 import OutlineButton from "../UI/OutlineButton";
+import getMapPreview, { getAddress } from "../../util/location";
+import {
+  useIsFocused,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 
-function LocationPicker() {
-  const [pickedLocation, setPickedLocation] = useState(null);
+function LocationPicker({ onPickLocation }) {
+  const [pickedLocation, setPickedLocation] = useState();
+  const isFocused = useIsFocused();
+
+  const navigation = useNavigation();
+  const route = useRoute();
+
   const [locationPermissionInformation, requestPermission] =
     useForegroundPermissions();
+
+  useEffect(() => {
+    if (isFocused && route.params) {
+      const mapPickedLocation = {
+        lat: route.params.pickedLat,
+        lng: route.params.pickedLng,
+      };
+      setPickedLocation(mapPickedLocation);
+    }
+  }, [route, isFocused]);
+
+  useEffect(() => {
+    async function handleLocation() {
+      if (pickedLocation) {
+        try {
+          const hasPermission = await verifyPermissions();
+          if (!hasPermission) {
+            return;
+          }
+
+          const address = await getAddress(
+            pickedLocation.lat,
+            pickedLocation.lng,
+          );
+          onPickLocation?.({ ...pickedLocation, address });
+        } catch {
+          onPickLocation?.({ ...pickedLocation, address: "Unknown address" });
+        }
+      }
+    }
+
+    handleLocation();
+  }, [pickedLocation, onPickLocation]);
 
   async function verifyPermissions() {
     if (!locationPermissionInformation) {
@@ -19,7 +63,9 @@ function LocationPicker() {
       return permissionResponse.granted;
     }
 
-    if (locationPermissionInformation.status === PermissionStatus.UNDETERMINED) {
+    if (
+      locationPermissionInformation.status === PermissionStatus.UNDETERMINED
+    ) {
       const permissionResponse = await requestPermission();
       return permissionResponse.granted;
     }
@@ -54,13 +100,19 @@ function LocationPicker() {
     }
   }
 
-  function pickOnMapHandler() {}
+  function pickOnMapHandler() {
+    navigation.navigate("Map");
+  }
 
   let locationPreview = <Text>No location chosen yet!</Text>;
   if (pickedLocation) {
-    locationPreview = (
-      <Text>
-        {pickedLocation.lat.toFixed(4)}, {pickedLocation.lng.toFixed(4)}
+    const mapPreviewUrl = getMapPreview(pickedLocation.lat, pickedLocation.lng);
+
+    locationPreview = mapPreviewUrl ? (
+      <Image source={{ uri: mapPreviewUrl }} style={styles.mapImage} />
+    ) : (
+      <Text style={styles.fallbackText}>
+        Map preview disabled (no Google Maps API key configured).
       </Text>
     );
   }
@@ -91,10 +143,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.primary100,
     borderRadius: 4,
+    overflow: "hidden",
   },
   actions: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
+  },
+  mapImage: {
+    width: "100%",
+    height: "100%",
+  },
+  fallbackText: {
+    padding: 12,
+    color: Colors.primary500,
+    textAlign: "center",
   },
 });
